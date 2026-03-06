@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Chatbot Widget Demo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Sora', sans-serif;
+      background: #0a0a0f;
+      color: #e8e8f0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .demo-bg {
+      position: fixed; inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 20% 20%, rgba(99,102,241,0.08) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 80% at 80% 80%, rgba(16,185,129,0.06) 0%, transparent 60%),
+        #0a0a0f;
+    }
+    .demo-content {
+      position: relative; z-index: 1;
+      text-align: center;
+      padding: 2rem;
+    }
+    .demo-content h1 {
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      background: linear-gradient(135deg, #fff 0%, #a5b4fc 50%, #6ee7b7 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 1rem;
+    }
+    .demo-content p { color: #6b7280; font-size: 1rem; font-weight: 300; }
+    .badge {
+      display: inline-block;
+      margin-top: 1.5rem;
+      padding: 0.4rem 1rem;
+      background: rgba(99,102,241,0.12);
+      border: 1px solid rgba(99,102,241,0.25);
+      border-radius: 100px;
+      font-size: 0.75rem;
+      color: #a5b4fc;
+      letter-spacing: 0.05em;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    #cb-bubble {
+      position: fixed;
+      bottom: 28px; right: 28px;
+      width: 58px; height: 58px;
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 8px 32px rgba(99,102,241,0.45), 0 2px 8px rgba(0,0,0,0.3);
+      transition: transform 0.25s cubic-bezier(.34,1.56,.64,1), box-shadow 0.25s ease;
+      z-index: 99999;
+      border: none;
+      outline: none;
+    }
+    #cb-bubble:hover { transform: scale(1.1); box-shadow: 0 12px 40px rgba(99,102,241,0.55), 0 2px 8px rgba(0,0,0,0.3); }
+    #cb-bubble.open { transform: scale(0.92); }
+    #cb-bubble svg { transition: opacity 0.2s, transform 0.2s; }
+    #cb-bubble .cb-icon-chat { opacity: 1; transform: rotate(0deg) scale(1); }
+    #cb-bubble .cb-icon-close { opacity: 0; transform: rotate(-90deg) scale(0.5); position: absolute; }
+    #cb-bubble.open .cb-icon-chat { opacity: 0; transform: rotate(90deg) scale(0.5); }
+    #cb-bubble.open .cb-icon-close { opacity: 1; transform: rotate(0deg) scale(1); }
+    #cb-bubble::before {
+      content: '';
+      position: absolute; inset: -4px;
+      border-radius: 50%;
+      border: 2px solid rgba(99,102,241,0.4);
+      animation: cb-pulse 2.5s ease-out infinite;
+    }
+    @keyframes cb-pulse {
+      0% { transform: scale(1); opacity: 0.8; }
+      100% { transform: scale(1.5); opacity: 0; }
+    }
+    #cb-window {
+      position: fixed;
+      bottom: 100px; right: 28px;
+      width: 370px;
+      max-height: 580px;
+      background: #13131a;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px;
+      display: flex; flex-direction: column;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.6), 0 4px 20px rgba(99,102,241,0.15);
+      overflow: hidden;
+      z-index: 99998;
+      transform: translateY(20px) scale(0.95);
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 0.3s cubic-bezier(.34,1.56,.64,1), opacity 0.25s ease;
+      font-family: 'Sora', sans-serif;
+    }
+    #cb-window.open { transform: translateY(0) scale(1); opacity: 1; pointer-events: all; }
+    #cb-header {
+      padding: 16px 18px;
+      background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(79,70,229,0.08));
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      display: flex; align-items: center; gap: 12px;
+    }
+    #cb-avatar {
+      width: 38px; height: 38px;
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; font-size: 18px;
+    }
+    #cb-header-info { flex: 1; }
+    #cb-header-name { font-size: 0.88rem; font-weight: 600; color: #f0f0fa; letter-spacing: -0.01em; }
+    #cb-header-status {
+      font-size: 0.72rem; color: #6ee7b7;
+      display: flex; align-items: center; gap: 5px; margin-top: 2px;
+    }
+    #cb-header-status::before {
+      content: ''; width: 6px; height: 6px;
+      background: #6ee7b7; border-radius: 50%;
+      animation: cb-blink 2s ease-in-out infinite;
+    }
+    @keyframes cb-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+    #cb-messages {
+      flex: 1; overflow-y: auto; padding: 16px;
+      display: flex; flex-direction: column; gap: 10px;
+      scroll-behavior: smooth;
+    }
+    #cb-messages::-webkit-scrollbar { width: 4px; }
+    #cb-messages::-webkit-scrollbar-track { background: transparent; }
+    #cb-messages::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+    .cb-msg {
+      max-width: 82%; padding: 10px 14px; border-radius: 16px;
+      font-size: 0.845rem; line-height: 1.55;
+      animation: cb-msgIn 0.3s cubic-bezier(.34,1.56,.64,1);
+    }
+    @keyframes cb-msgIn {
+      from { opacity: 0; transform: translateY(8px) scale(0.96); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .cb-msg.bot {
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08);
+      color: #e0e0f0; align-self: flex-start; border-bottom-left-radius: 4px;
+    }
+    .cb-msg.user {
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      color: #fff; align-self: flex-end; border-bottom-right-radius: 4px;
+      box-shadow: 0 4px 16px rgba(99,102,241,0.3);
+    }
+    .cb-typing {
+      display: flex; align-items: center; gap: 5px;
+      padding: 12px 16px;
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px; border-bottom-left-radius: 4px;
+      align-self: flex-start; animation: cb-msgIn 0.3s ease;
+    }
+    .cb-typing span {
+      width: 7px; height: 7px; background: #6366f1;
+      border-radius: 50%; animation: cb-bounce 1.2s ease-in-out infinite;
+    }
+    .cb-typing span:nth-child(2) { animation-delay: 0.15s; }
+    .cb-typing span:nth-child(3) { animation-delay: 0.3s; }
+    @keyframes cb-bounce {
+      0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+      30% { transform: translateY(-6px); opacity: 1; }
+    }
+    #cb-input-area {
+      padding: 12px 14px; border-top: 1px solid rgba(255,255,255,0.06);
+      display: flex; align-items: center; gap: 10px;
+      background: rgba(255,255,255,0.02);
+    }
+    #cb-input {
+      flex: 1; background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;
+      padding: 10px 14px; color: #e8e8f0; font-size: 0.845rem;
+      font-family: 'Sora', sans-serif; outline: none;
+      transition: border-color 0.2s, background 0.2s;
+      resize: none; line-height: 1.4;
+      overflow: hidden;
+    }
+    #cb-input::placeholder { color: #4b5563; }
+    #cb-input:focus { border-color: rgba(99,102,241,0.5); background: rgba(255,255,255,0.09); }
+    #cb-send {
+      width: 40px; height: 40px;
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      border: none; border-radius: 12px; cursor: pointer; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: transform 0.2s cubic-bezier(.34,1.56,.64,1), opacity 0.2s;
+      box-shadow: 0 4px 14px rgba(99,102,241,0.35);
+    }
+    #cb-send:hover { transform: scale(1.08); }
+    #cb-send:active { transform: scale(0.95); }
+    #cb-send:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+    #cb-footer {
+      text-align: center; padding: 6px 0 10px;
+      font-size: 0.65rem; color: #374151;
+      font-family: 'JetBrains Mono', monospace; letter-spacing: 0.03em;
+    }
+    @media (max-width: 420px) {
+      #cb-window { width: calc(100vw - 24px); right: 12px; bottom: 88px; }
+      #cb-bubble { bottom: 20px; right: 16px; }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="demo-bg"></div>
+<div class="demo-content">
+  <h1>Your Website<br/>Goes Here</h1>
+  <p>The chat bubble is bottom right ↘</p>
+  <span class="badge">n8n + ollama powered</span>
+</div>
+
+<button id="cb-bubble" aria-label="Open chat">
+  <svg class="cb-icon-chat" width="24" height="24" viewBox="0 0 24 24" fill="none">
+    <path d="M20 2H4C2.9 2 2 2.9 2 4V22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2Z" fill="white"/>
+  </svg>
+  <svg class="cb-icon-close" width="20" height="20" viewBox="0 0 20 20" fill="none">
+    <path d="M15 5L5 15M5 5L15 15" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+  </svg>
+</button>
+
+<div id="cb-window" role="dialog" aria-label="Chat">
+  <div id="cb-header">
+    <div id="cb-avatar">🤖</div>
+    <div id="cb-header-info">
+      <div id="cb-header-name">AI Assistant</div>
+      <div id="cb-header-status">Online — ready to help</div>
+    </div>
+  </div>
+  <div id="cb-messages"></div>
+  <div id="cb-input-area">
+    <textarea id="cb-input" rows="1" placeholder="Type your message..." maxlength="500"></textarea>
+    <button id="cb-send" aria-label="Send">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+        <path d="M16 9L2 2L5 9L2 16L16 9Z" fill="white"/>
+      </svg>
+    </button>
+  </div>
+  <div id="cb-footer">powered by your ai · n8n</div>
+</div>
+
+<script>
+  // ── CONFIG
+  const CONFIG = {
+    webhookUrl: 'https://n8n-1-wun9.onrender.com/webhook/AIchatbot',
+    botName: 'AI Assistant',
+    welcomeMessage: '👋 Hello! How can I help you today?',
+  };
+
+  // ── SESSION ID (generated once, stored in localStorage)
+  const session_id = localStorage.getItem('session_id') ||
+    (() => {
+      const id = 'user_' + Date.now();
+      localStorage.setItem('session_id', id);
+      return id;
+    })();
+
+  // ── STATE
+  let isOpen = false;
+  let isLoading = false;
+  let chatHistory = [];
+
+  const bubble   = document.getElementById('cb-bubble');
+  const window_  = document.getElementById('cb-window');
+  const messages = document.getElementById('cb-messages');
+  const input    = document.getElementById('cb-input');
+  const sendBtn  = document.getElementById('cb-send');
+
+  // ── Welcome message
+  addMessage(CONFIG.welcomeMessage, 'bot');
+
+  // ── Toggle chat window
+  bubble.addEventListener('click', () => {
+    isOpen = !isOpen;
+    bubble.classList.toggle('open', isOpen);
+    window_.classList.toggle('open', isOpen);
+    if (isOpen) setTimeout(() => input.focus(), 300);
+  });
+
+  // ── Enter to send
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+
+  // ── Auto resize textarea
+  input.addEventListener('input', () => {
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 100) + 'px';
+  });
+
+  sendBtn.addEventListener('click', sendMessage);
+
+  // ── SEND MESSAGE — single fetch, includes session_id
+  async function sendMessage() {
+    const text = input.value.trim();
+    if (!text || isLoading) return;
+
+    addMessage(text, 'user');
+    chatHistory.push({ role: 'user', content: text });
+    input.value = '';
+    input.style.height = 'auto';
+
+    setLoading(true);
+    const typingEl = showTyping();
+
+    try {
+      const res = await fetch(CONFIG.webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: text,
+          history: chatHistory,
+          session_id: session_id       // ✅ session_id sent correctly
+        })
+      });
+
+      const data = await res.json();
+      const reply = data.reply || 'Sorry, something went wrong. Please try again.';
+
+      removeTyping(typingEl);
+      addMessage(reply, 'bot');
+      chatHistory.push({ role: 'assistant', content: reply });
+
+    } catch (err) {
+      removeTyping(typingEl);
+      addMessage('⚠️ Could not connect. Please try again.', 'bot');
+    }
+
+    setLoading(false);
+    input.focus();
+  }
+
+  // ── HELPERS
+  function addMessage(text, role) {
+    const el = document.createElement('div');
+    el.className = `cb-msg ${role}`;
+    el.textContent = text;
+    messages.appendChild(el);
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  function showTyping() {
+    const el = document.createElement('div');
+    el.className = 'cb-typing';
+    el.innerHTML = '<span></span><span></span><span></span>';
+    messages.appendChild(el);
+    messages.scrollTop = messages.scrollHeight;
+    return el;
+  }
+
+  function removeTyping(el) {
+    if (el && el.parentNode) el.parentNode.removeChild(el);
+  }
+
+  function setLoading(state) {
+    isLoading = state;
+    sendBtn.disabled = state;
+    input.disabled = state;
+  }
+</script>
+
+</body>
+</html>

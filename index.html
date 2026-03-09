@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>AI Chatbot Widget Demo</title>
+  <title>DiVRgence AI Assistant</title>
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -16,41 +16,6 @@
       align-items: center;
       justify-content: center;
       overflow: hidden;
-    }
-    .demo-bg {
-      position: fixed; inset: 0;
-      background:
-        radial-gradient(ellipse 80% 60% at 20% 20%, rgba(99,102,241,0.08) 0%, transparent 60%),
-        radial-gradient(ellipse 60% 80% at 80% 80%, rgba(16,185,129,0.06) 0%, transparent 60%),
-        #0a0a0f;
-    }
-    .demo-content {
-      position: relative; z-index: 1;
-      text-align: center;
-      padding: 2rem;
-    }
-    .demo-content h1 {
-      font-size: clamp(2rem, 5vw, 3.5rem);
-      font-weight: 600;
-      letter-spacing: -0.03em;
-      background: linear-gradient(135deg, #fff 0%, #a5b4fc 50%, #6ee7b7 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      margin-bottom: 1rem;
-    }
-    .demo-content p { color: #6b7280; font-size: 1rem; font-weight: 300; }
-    .badge {
-      display: inline-block;
-      margin-top: 1.5rem;
-      padding: 0.4rem 1rem;
-      background: rgba(99,102,241,0.12);
-      border: 1px solid rgba(99,102,241,0.25);
-      border-radius: 100px;
-      font-size: 0.75rem;
-      color: #a5b4fc;
-      letter-spacing: 0.05em;
-      font-family: 'JetBrains Mono', monospace;
     }
     #cb-bubble {
       position: fixed;
@@ -203,20 +168,100 @@
       font-size: 0.65rem; color: #374151;
       font-family: 'JetBrains Mono', monospace; letter-spacing: 0.03em;
     }
+    /* ── Floating greeting */
+    #cb-greeting {
+      position: fixed;
+      bottom: 100px; right: 22px;
+      z-index: 99997;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
+      pointer-events: none;
+      animation: greet-in 0.6s cubic-bezier(.34,1.56,.64,1) 1.2s both;
+    }
+    @keyframes greet-in {
+      from { opacity: 0; transform: translateY(14px) scale(0.88); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    #cb-greeting.hide {
+      animation: greet-out 0.3s ease forwards;
+    }
+    @keyframes greet-out {
+      to { opacity: 0; transform: translateY(8px) scale(0.92); pointer-events: none; }
+    }
+    #cb-greeting-bubble {
+      background: linear-gradient(135deg, #1e1b4b, #2d2460);
+      border: 1px solid rgba(99,102,241,0.35);
+      border-radius: 18px 18px 4px 18px;
+      padding: 10px 16px;
+      box-shadow: 0 8px 32px rgba(99,102,241,0.25), 0 2px 8px rgba(0,0,0,0.4);
+      position: relative;
+      backdrop-filter: blur(12px);
+    }
+    #cb-greeting-bubble::after {
+      content: '';
+      position: absolute;
+      bottom: -7px; right: 14px;
+      width: 14px; height: 14px;
+      background: linear-gradient(135deg, transparent 50%, #2d2460 50%);
+      border-right: 1px solid rgba(99,102,241,0.35);
+      border-bottom: 1px solid rgba(99,102,241,0.35);
+      border-radius: 0 0 4px 0;
+      transform: rotate(45deg);
+    }
+    #cb-greeting-text {
+      font-family: 'Sora', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 500;
+      color: #e0e0f8;
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+    }
+    #cb-greeting-text span {
+      background: linear-gradient(90deg, #a5b4fc, #6ee7b7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: 600;
+    }
+    #cb-greeting-dot {
+      width: 8px; height: 8px;
+      background: #6ee7b7;
+      border-radius: 50%;
+      align-self: center;
+      margin-right: 4px;
+      animation: cb-blink 2s ease-in-out infinite;
+      display: inline-block;
+    }
+    #cb-greeting-sub {
+      font-size: 0.7rem;
+      color: #6b7280;
+      font-family: 'JetBrains Mono', monospace;
+      text-align: right;
+      padding-right: 4px;
+      letter-spacing: 0.03em;
+    }
+
     @media (max-width: 420px) {
       #cb-window { width: calc(100vw - 24px); right: 12px; bottom: 88px; }
       #cb-bubble { bottom: 20px; right: 16px; }
+      #cb-greeting { right: 10px; bottom: 96px; }
     }
   </style>
 </head>
 
 <body>
 
-<div class="demo-bg"></div>
-<div class="demo-content">
-  <h1>Your Website<br/>Goes Here</h1>
-  <p>The chat bubble is bottom right ↘</p>
-  <span class="badge">n8n + ollama powered</span>
+<!-- Floating greeting -->
+<div id="cb-greeting">
+  <div id="cb-greeting-sub">tap to chat 👇</div>
+  <div id="cb-greeting-bubble">
+    <div id="cb-greeting-text">
+      <span id="cb-greeting-dot"></span>
+      Hi! I'm <span>Clark</span> 👋
+    </div>
+  </div>
 </div>
 
 <button id="cb-bubble" aria-label="Open chat">
@@ -230,41 +275,38 @@
 
 <div id="cb-window" role="dialog" aria-label="Chat">
   <div id="cb-header">
-    <div id="cb-avatar">🤖</div>
+    <div id="cb-avatar">🎮</div>
     <div id="cb-header-info">
-      <div id="cb-header-name">AI Assistant</div>
+      <div id="cb-header-name">Clark — DiVRgence</div>
       <div id="cb-header-status">Online — ready to help</div>
     </div>
   </div>
   <div id="cb-messages"></div>
   <div id="cb-input-area">
-    <textarea id="cb-input" rows="1" placeholder="Type your message..." maxlength="500"></textarea>
+    <textarea id="cb-input" rows="1" placeholder="Ask me anything..." maxlength="500"></textarea>
     <button id="cb-send" aria-label="Send">
       <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
         <path d="M16 9L2 2L5 9L2 16L16 9Z" fill="white"/>
       </svg>
     </button>
   </div>
-  <div id="cb-footer">powered by your ai · n8n</div>
+  <div id="cb-footer">DiVRgence Virtual Assistant · thedivrgence.com</div>
 </div>
 
 <script>
-  // ── CONFIG
   const CONFIG = {
     webhookUrl: 'https://n8n-1-wun9.onrender.com/webhook/AIchatbot',
-    botName: 'AI Assistant',
-    welcomeMessage: '👋 Hello! How can I help you today?',
+    botName: 'Clark',
+    welcomeMessage: 'Hey! Welcome to DiVRgence! 👋 What can I do for you today?',
   };
 
-  // ── SESSION ID (generated once, stored in localStorage)
-  const session_id = localStorage.getItem('session_id') ||
+  const session_id = localStorage.getItem('cb_session_id') ||
     (() => {
       const id = 'user_' + Date.now();
-      localStorage.setItem('session_id', id);
+      localStorage.setItem('cb_session_id', id);
       return id;
     })();
 
-  // ── STATE
   let isOpen = false;
   let isLoading = false;
   let chatHistory = [];
@@ -274,19 +316,21 @@
   const messages = document.getElementById('cb-messages');
   const input    = document.getElementById('cb-input');
   const sendBtn  = document.getElementById('cb-send');
+  const greeting = document.getElementById('cb-greeting');
 
-  // ── Welcome message
   addMessage(CONFIG.welcomeMessage, 'bot');
 
-  // ── Toggle chat window
   bubble.addEventListener('click', () => {
     isOpen = !isOpen;
     bubble.classList.toggle('open', isOpen);
     window_.classList.toggle('open', isOpen);
-    if (isOpen) setTimeout(() => input.focus(), 300);
+    if (isOpen) {
+      greeting.classList.add('hide');
+      setTimeout(() => { greeting.style.display = 'none'; }, 300);
+      setTimeout(() => input.focus(), 300);
+    }
   });
 
-  // ── Enter to send
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -294,7 +338,6 @@
     }
   });
 
-  // ── Auto resize textarea
   input.addEventListener('input', () => {
     input.style.height = 'auto';
     input.style.height = Math.min(input.scrollHeight, 100) + 'px';
@@ -302,7 +345,6 @@
 
   sendBtn.addEventListener('click', sendMessage);
 
-  // ── SEND MESSAGE — single fetch, includes session_id
   async function sendMessage() {
     const text = input.value.trim();
     if (!text || isLoading) return;
@@ -322,7 +364,7 @@
         body: JSON.stringify({
           message: text,
           history: chatHistory,
-          session_id: session_id       // ✅ session_id sent correctly
+          session_id: session_id
         })
       });
 
@@ -342,7 +384,6 @@
     input.focus();
   }
 
-  // ── HELPERS
   function addMessage(text, role) {
     const el = document.createElement('div');
     el.className = `cb-msg ${role}`;
